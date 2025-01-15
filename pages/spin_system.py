@@ -1,9 +1,6 @@
-from email.policy import default
-from typing import Any
-
 import numpy as np
 import streamlit as st
-from mrsimulator import Site
+from mrsimulator import Site, Coupling
 from mrsimulator.spin_system.tensors import SymmetricTensor
 import os
 import pandas as pd
@@ -88,7 +85,7 @@ script_dir = os.path.dirname(__file__)
 csv_file = os.path.join(script_dir, '../resources/NMR_freq_table.csv')
 
 table_of_nuclei = pd.read_csv(csv_file)
-st.header("*Add nuclei*")
+st.header("**Add nuclei**")
 sites = []
 
 
@@ -102,8 +99,10 @@ while add_nuclei == "yes":
     add_nuclei = st.selectbox("Add more sites?", ["yes", "no"], index = None, key = f'add_nuclei_{num_site}')
     st.divider()
 
-st.subheader("Spin System Parameters")
-
+if "sites" in st.session_state :
+    pass
+else :
+    st.session_state.sites = sites
 
 st.subheader("Summary of Spin System Parameters")
 
@@ -128,6 +127,11 @@ if sites:
 
 else:
     st.write("No spin sites have been added yet.")
+
+
+
+
+
 
 # Advanced Coupling generator
 def add_advanced_coupling(num_sites, key):
@@ -206,21 +210,18 @@ if "advanced_couplings" not in st.session_state:
 
 add_advanced_coupling_pairs = "yes"
 num_advanced_coupling = 0
+if len ( sites ) >= 2 :
+    while add_advanced_coupling_pairs == "yes":
 
-while add_advanced_coupling_pairs == "yes":
-    if len(sites) < 2:
-        st.write("You need at least 2 sites to define coupling.")
-        break
+        advanced_coupling_added = add_advanced_coupling(len(sites), num_advanced_coupling)
+        st.session_state.advanced_couplings.append(advanced_coupling_added)
+        num_advanced_coupling += 1
 
-    advanced_coupling_added = add_advanced_coupling(len(sites), num_advanced_coupling)
-    st.session_state.advanced_couplings.append(advanced_coupling_added)
-    num_advanced_coupling += 1
-
-    st.write(f"Number of advanced couplings defined: {num_advanced_coupling}")
-    add_advanced_coupling_pairs = st.selectbox(
-        "Add more couplings?", ["yes", "no"], index=None, key=f"add_advanced_coupling_{num_advanced_coupling}"
-    )
-    st.divider()
+        st.write(f"Number of advanced couplings defined: {num_advanced_coupling}")
+        add_advanced_coupling_pairs = st.selectbox(
+            "Add more couplings?", ["yes", "no"], index=None, key=f"add_advanced_coupling_{num_advanced_coupling}"
+        )
+        st.divider()
 
 # Showing Summary of Advanced Couplings
 st.subheader("Summary of Advanced Couplings")
