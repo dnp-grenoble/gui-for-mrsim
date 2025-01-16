@@ -6,7 +6,7 @@ import os
 import pandas as pd
 
 
-
+# Nuclei listing and adding chemical shift/quadrupolar interaction etc.
 def add_site(list_of_nuclei, key):
     isotope = st.text_input ( f"Nucleus : ", value="1H", key = f'isotope_{key}')
     isotropic_chemical_shift = st.number_input(
@@ -15,7 +15,7 @@ def add_site(list_of_nuclei, key):
         format="%.2f", key = f'chemical_shift_{key}'
     )
 
-    st.markdown("#### CSA Parameters")
+    st.markdown("##### CSA Parameters (optional)")
     colcs1, colcs2, colcs3, colcs4, colcs5 = st.columns(5)
     with colcs1:
         zeta = st.number_input("ζ (ppm)", value=0.0, format="%.2f", key = f'cszeta_{key}')
@@ -41,7 +41,7 @@ def add_site(list_of_nuclei, key):
     spin_num = list_of_nuclei[ mask]["Spin"]
     if spin_num.gt ( 0.5 ).any ():
         # Section: Quadrupolar tensor
-        st.markdown("#### Quadrupolar Tensor Parameters")
+        st.markdown("##### Quadrupolar Tensor Parameters")
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
             Cq = st.number_input("Cq (Hz)", value=0, format="%.3e", key = f'cq_{key}')
@@ -78,6 +78,76 @@ def add_site(list_of_nuclei, key):
         )
 
     return site_instance
+
+
+# Dipolar and J-Coupling generator
+def add_couplings_DJ(num_sites, key):
+    st.subheader(f"Define Advanced Coupling for Interaction Pair {key + 1}")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        spin1 = st.selectbox(
+            "Select Site 1 (Index)", options=list(range(num_sites)), key=f"spin1_{key}", index = 0,
+        )
+    with col2:
+        spin2 = st.selectbox(
+            "Select Site 2 (Index)", options=list(range(num_sites)), key=f"spin2_{key}", index=1,
+        )
+    st.markdown("##### Define J-Coupling Parameters (Optional)")
+    isotropic_j = st.number_input(
+        "Isotropic J-Coupling (Hz)", value=10.0, format="%.3f", key=f"isotropic_j_{key}"
+    )
+
+    # Additional parameters for J-symmetric tensor
+    st.markdown("##### Define J-Symmetric Tensor Parameters (Optional)")
+    col_js1, col_js2, col_js3, col_js4, col_js5 = st.columns(5)
+    with col_js1:
+        zeta_j = st.number_input("ζ (Hz)", value=0.0, format="%.3f", key=f"zeta_j_{key}")
+    with col_js2:
+        eta_j = st.number_input("η", min_value=0.0, max_value=1.0, value=0.0, format="%.2f", key=f"eta_j_{key}")
+    with col_js3:
+        alpha_j = st.number_input("α (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
+                                  key=f"alpha_j_{key}")
+    with col_js4:
+        beta_j = st.number_input("β (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
+                                 key=f"beta_j_{key}")
+    with col_js5:
+        gamma_j = st.number_input("γ (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
+                                  key=f"gamma_j_{key}")
+
+    j_symmetric_tensor = SymmetricTensor(
+        zeta=zeta_j, eta=eta_j, alpha=alpha_j, beta=beta_j, gamma=gamma_j
+    )
+
+    # Additional parameters for Dipolar coupling
+    st.markdown("##### Define Dipolar Tensor Parameters (Optional)")
+    col_ds1, col_ds2, col_ds3, col_ds4 = st.columns(4)
+    with col_ds1:
+        D_dipolar = st.number_input("D (Hz)", value=0.0, format="%.3f", key=f"D_dipolar_{key}")
+    with col_ds2:
+        alpha_d = st.number_input("α (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
+                                  key=f"alpha_d_{key}")
+    with col_ds3:
+        beta_d = st.number_input("β (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
+                                 key=f"beta_d_{key}")
+    with col_ds4:
+        gamma_d = st.number_input("γ (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
+                                  key=f"gamma_d_{key}")
+
+    dipolar_tensor = SymmetricTensor(
+        D=D_dipolar, alpha=alpha_d, beta=beta_d, gamma=gamma_d
+    )
+
+    # Create the Coupling instance
+    coupling_instance = Coupling(
+        site_index=[spin1, spin2],
+        isotropic_j=isotropic_j,
+        j_symmetric=j_symmetric_tensor,
+        dipolar=dipolar_tensor,
+    )
+
+    return coupling_instance
+
 
 
 
@@ -133,100 +203,34 @@ else:
 
 
 
-# Advanced Coupling generator
-def add_advanced_coupling(num_sites, key):
-    st.subheader(f"Define Advanced Coupling for Interaction Pair {key + 1}")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        spin1 = st.selectbox(
-            "Select Site 1 (Index)", options=list(range(num_sites)), key=f"spin1_{key}"
-        )
-    with col2:
-        spin2 = st.selectbox(
-            "Select Site 2 (Index)", options=list(range(num_sites)), key=f"spin2_{key}"
-        )
-
-    isotropic_j = st.number_input(
-        "Isotropic J-Coupling (Hz)", value=10.0, format="%.3f", key=f"isotropic_j_{key}"
-    )
-
-    # Additional parameters for J-symmetric tensor
-    st.subheader("Define J-Symmetric Tensor Parameters (Optional)")
-    col_js1, col_js2, col_js3, col_js4, col_js5 = st.columns(5)
-    with col_js1:
-        zeta_j = st.number_input("ζ (Hz)", value=0.0, format="%.3f", key=f"zeta_j_{key}")
-    with col_js2:
-        eta_j = st.number_input("η", min_value=0.0, max_value=1.0, value=0.0, format="%.2f", key=f"eta_j_{key}")
-    with col_js3:
-        alpha_j = st.number_input("α (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
-                                  key=f"alpha_j_{key}")
-    with col_js4:
-        beta_j = st.number_input("β (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
-                                 key=f"beta_j_{key}")
-    with col_js5:
-        gamma_j = st.number_input("γ (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
-                                  key=f"gamma_j_{key}")
-
-    j_symmetric_tensor = SymmetricTensor(
-        zeta=zeta_j, eta=eta_j, alpha=alpha_j, beta=beta_j, gamma=gamma_j
-    )
-
-    # Additional parameters for Dipolar coupling
-    st.subheader("Define Dipolar Tensor Parameters (Optional)")
-    col_ds1, col_ds2, col_ds3, col_ds4 = st.columns(4)
-    with col_ds1:
-        D_dipolar = st.number_input("D (Hz)", value=0.0, format="%.3f", key=f"D_dipolar_{key}")
-    with col_ds2:
-        alpha_d = st.number_input("α (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
-                                  key=f"alpha_d_{key}")
-    with col_ds3:
-        beta_d = st.number_input("β (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
-                                 key=f"beta_d_{key}")
-    with col_ds4:
-        gamma_d = st.number_input("γ (radians)", min_value=0.0, max_value=6.283, value=0.0, format="%.3f",
-                                  key=f"gamma_d_{key}")
-
-    dipolar_tensor = SymmetricTensor(
-        D=D_dipolar, alpha=alpha_d, beta=beta_d, gamma=gamma_d
-    )
-
-    # Create the Coupling instance
-    coupling_instance = Coupling(
-        site_index=[spin1, spin2],
-        isotropic_j=isotropic_j,
-        j_symmetric=j_symmetric_tensor,
-        dipolar=dipolar_tensor,
-    )
-
-    return coupling_instance
 
 
 # Adding J- and/or Dipolar Coupling Instances
-st.subheader("Add J- or Dipolar Coupling Between Spin Sites")
 
-if "advanced_couplings" not in st.session_state:
-    st.session_state.advanced_couplings = []
 
-add_advanced_coupling_pairs = "yes"
+dipolar_and_J_couplings = []
+
+add_couplings_DJ_pairs = "yes"
 num_advanced_coupling = 0
 if len ( sites ) >= 2 :
-    while add_advanced_coupling_pairs == "yes":
+    st.subheader("Add J- or Dipolar Coupling Between Spin Sites")
+    while add_couplings_DJ_pairs == "yes":
 
-        advanced_coupling_added = add_advanced_coupling(len(sites), num_advanced_coupling)
-        st.session_state.advanced_couplings.append(advanced_coupling_added)
+        advanced_coupling_added = add_couplings_DJ(len(sites), num_advanced_coupling)
+        dipolar_and_J_couplings.append(advanced_coupling_added)
         num_advanced_coupling += 1
 
         st.write(f"Number of advanced couplings defined: {num_advanced_coupling}")
-        add_advanced_coupling_pairs = st.selectbox(
-            "Add more couplings?", ["yes", "no"], index=None, key=f"add_advanced_coupling_{num_advanced_coupling}"
+        add_couplings_DJ_pairs = st.selectbox(
+            "Add more couplings?", ["yes", "no"], index=None, key=f"add_couplings_DJ_{num_advanced_coupling}"
         )
         st.divider()
 
 # Showing Summary of Advanced Couplings
-st.subheader("Summary of Advanced Couplings")
-if st.session_state.advanced_couplings:
-    for idx, coupling in enumerate(st.session_state.advanced_couplings, start=1):
+st.subheader("Summary of Couplings")
+if dipolar_and_J_couplings:
+    for idx, coupling in enumerate(dipolar_and_J_couplings, start=1):
         st.write(f"**Advanced Coupling {idx}:**")
         st.write(f"- **Site 1 Index**: {coupling.site_index[0]}")
         st.write(f"- **Site 2 Index**: {coupling.site_index[1]}")
@@ -243,6 +247,7 @@ if st.session_state.advanced_couplings:
         st.write(f"  - β: {coupling.dipolar.beta}")
         st.write(f"  - γ: {coupling.dipolar.gamma}")
         st.divider()
+    st.session_state.dipolar_and_J_couplings = dipolar_and_J_couplings
 else:
     st.write("No advanced couplings have been defined yet.")
 
