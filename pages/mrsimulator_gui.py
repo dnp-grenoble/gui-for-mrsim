@@ -9,9 +9,8 @@ from mrsimulator.method.lib import (BlochDecaySpectrum, BlochDecayCTSpectrum, Th
 from mrsimulator.method import SpectralDimension
 from mrsimulator import Simulator
 from mrsimulator import signal_processor as sp
-import plotly.graph_objects as go
 import time
-
+import matplotlib.pyplot as plt
 
 
 
@@ -53,7 +52,7 @@ def add_site(list_of_nuclei, key):
         st.markdown("##### Quadrupolar Tensor Parameters")
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            cq_value = st.number_input("cq_value (Hz)", value=0, format="%.3e", key = f'cq_{key}')
+            cq_value = st.number_input("cq_value (MHz)", value=0.0, format="%.2f", key = f'cq_{key}')
         with col2:
             eta_quadrupolar = st.number_input("η (0 ≤ η ≤ 1)", min_value=0.0, max_value=1.0, value=0., key = f'ceta_{key}')
         with col3:
@@ -64,7 +63,7 @@ def add_site(list_of_nuclei, key):
             gamma_quadrupolar = st.number_input("γ (degree)", min_value=0.0, max_value=360.0, value = 0.0, format="%.2f", key = f'cgamma_{key}')
 
         quadrupolar = SymmetricTensor(
-            Cq=cq_value,
+            Cq=cq_value*1e6,
             eta=eta_quadrupolar,
             alpha=alpha_quadrupolar*np.pi/180.0,
             beta=beta_quadrupolar*np.pi/180.0,
@@ -377,35 +376,6 @@ def get_method_parameters_from_gui_input_fn():
 
     return method
 
-def plot_processed_dataset(processed_dataset_fn) :
-    # Extract x and y data from the processed CSDM dataset
-    x_data = processed_dataset_fn.dimensions[ 0 ].coordinates  # Get x-axis (coordinates)
-    y_data = processed_dataset_fn.dependent_variables[ 0 ].components[ 0 ].real  # Get real part of y-data
-
-    # Create a Plotly figure
-    fig = go.Figure ()
-
-    # Add line plot for the real part of the dataset
-    fig.add_trace ( go.Scatter (
-        x=x_data ,  # X-axis values (coordinates from CSDM)
-        y=y_data ,  # Y-axis values (real components of the dataset)
-        mode="lines" ,  # Create a line plot
-        line=dict ( color="black" , width=1 ) ,  # Styling for the line
-        name="Real Part"
-    ) )
-
-    # Update layout to invert the x-axis and set figure size
-    fig.update_layout (
-        xaxis=dict ( autorange="reversed" ) ,  # Invert x-axis
-        width=425 ,  # Width
-        height=300 ,  # Height
-        template="plotly_white" ,  # Clean background
-        margin=dict ( l=40 , r=10 , t=10 , b=30 ) ,  # Tighter layout
-    )
-
-    # Display the plotly chart in Streamlit
-    st.plotly_chart ( fig , use_container_width=False )
-
 def click_button():
     st.session_state.clicked = True
 
@@ -443,18 +413,51 @@ with simulation_tab:
 with process_and_plot:
     plot_data_choice = st.selectbox ( "Process and Plot Data:" , [ "No" , "Yes" ] , index=None , key="plot_data" )
     if plot_data_choice == "Yes" :
-        processed_dataset = None
-        min_line_broadening_hz = st.number_input("Min Line Broadening in Hz:", value=0.0)
-        max_line_broadening_hz = st.number_input("Max Line Broadening in Hz:", value=100.0)
-        line_broadening_hz = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz, max_value=max_line_broadening_hz , value=10.0, format="%f", step=2.0 )
-        processor = sp.SignalProcessor(
-            operations=[
-                sp.IFFT(),
-                sp.apodization.Gaussian( FWHM=f"{line_broadening_hz} Hz" ),
-                sp.FFT(),
-            ]
-        )
+        one_or_two_dim = st.selectbox("One or two dimensional data?", ["1D", "2D"], index=None, key="plot_data_dim")
+        if one_or_two_dim == "1D":
+            processed_dataset = None
+            min_line_broadening_hz = st.number_input("Min Line Broadening in Hz:", value=0.0)
+            max_line_broadening_hz = st.number_input("Max Line Broadening in Hz:", value=100.0)
+            line_broadening_hz = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz, max_value=max_line_broadening_hz , value=10.0, format="%f", step=2.0 )
+            processor = sp.SignalProcessor(
+                operations=[
+                    sp.IFFT(),
+                    sp.apodization.Gaussian( FWHM=f"{line_broadening_hz} Hz" ),
+                    sp.FFT(),
+                ]
+            )
+            # The plot of the simulation before signal processing.
+            plt.figure ( figsize=(4.25 , 3.0) )
+            ax = plt.subplot ( projection="csdm" )
+            ax.plot ( sim.methods[ 0 ].simulation.real , color="black" , linewidth=1 )
+            ax.invert_xaxis ()
+            plt.tight_layout ()
+            plt.show ()
+        elif one_or_two_dim == "2D":
+            processed_dataset = None
+            min_line_broadening_hz_dim1 = st.number_input("Min Line Broadening in Hz:", value=0.0)
+            max_line_broadening_hz_dim1 = st.number_input("Max Line Broadening in Hz:", value=100.0)
+            min_line_broadening_hz_dim2 = st.number_input ( "Min Line Broadening in Hz:" , value=0.0 )
+            max_line_broadening_hz_dim2 = st.number_input ( "Max Line Broadening in Hz:" , value=100.0 )
 
-        processed_dataset = processor.apply_operations(dataset=sim.methods[0].simulation)
-        processed_dataset.dimensions[0].to("ppm", "nmr_frequency_ratio")
-        plot_processed_dataset ( processed_dataset )
+            line_broadening_hz_dim1 = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz_dim1, max_value=max_line_broadening_hz_dim1 , value=10.0, format="%f", step=2.0 )
+            line_broadening_hz_dim2 = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz_dim2, max_value=max_line_broadening_hz_dim2 , value=10.0, format="%f", step=2.0 )
+
+            processor = sp.SignalProcessor (
+                operations=[
+                    # Gaussian convolution along both dimensions.
+                    sp.IFFT ( dim_index=(0 , 1) ) ,
+                    sp.apodization.Gaussian ( FWHM=f"{line_broadening_hz_dim1} Hz" , dim_index=0 ) ,
+                    sp.apodization.Gaussian ( FWHM=f"{line_broadening_hz_dim2} Hz" , dim_index=1 ) ,
+                    sp.FFT ( dim_index=(0 , 1) ) ,
+                ]
+            )
+            processed_dataset = processor.apply_operations ( dataset=sim.methods[ 0 ].simulation )
+            processed_dataset /= processed_dataset.max ()
+            plt.figure ( figsize=(4.25 , 3.0) )
+            ax = plt.subplot ( projection="csdm" )
+            cb = ax.imshow ( processed_dataset.real , cmap="gist_ncar_r" , aspect="auto" )
+            plt.colorbar ( cb )
+            plt.tight_layout ()
+            plt.show ()
+
