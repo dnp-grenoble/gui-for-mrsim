@@ -294,17 +294,17 @@ def common_2d_experimental_parameters(type_of_method) :
     rotor_angle_degrees = st.number_input ( "Rotor Angle (degrees)" , min_value=0.0 , max_value=90.0 , value=54.735 )
     magnetic_flux_density_t = st.number_input ( "Magnetic Flux Density (T)" , min_value=0.0 , max_value=40.0 ,
                                                 value=9.4 )
-    spectral_dimension1_count = st.number_input ( "Spectral Dimension Count" , min_value=1 , value=1024 )
-    spectral_width1_hz = st.number_input ( "Spectral Width (Hz)" , min_value=100.0 , value=25000.0 )
-    reference_offset1_hz = st.number_input ( "Reference Offset (Hz)" , value=0.0 )
+    spectral_dimension1_count = st.number_input ( "Spectral Dimension Count" , min_value=1 , value=1024 , key="td1")
+    spectral_width1_hz = st.number_input ( "Spectral Width (Hz)" , min_value=100.0 , value=25000.0 , key="sw1")
+    reference_offset1_hz = st.number_input ( "Reference Offset (Hz)" , value=0.0, key="r1" )
 
-    spectral_dimension2_count = st.number_input ( "Spectral Dimension Count" , min_value=1 , value=1024 )
-    spectral_width2_hz = st.number_input ( "Spectral Width (Hz)" , min_value=100.0 , value=25000.0 )
-    reference_offset2_hz = st.number_input ( "Reference Offset (Hz)" , value=0.0 )
+    spectral_dimension2_count = st.number_input ( "Spectral Dimension Count" , min_value=1 , value=1024, key="td2" )
+    spectral_width2_hz = st.number_input ( "Spectral Width (Hz)" , min_value=100.0 , value=25000.0, key="sw2" )
+    reference_offset2_hz = st.number_input ( "Reference Offset (Hz)" , value=0.0, key="r2" )
 
     def create_spectrum_VAS(method_class) :
         return method_class (
-            channels=experiment_channels ,
+            channels=[experiment_channels] ,
             magnetic_flux_density=magnetic_flux_density_t ,
             spectral_dimensions=[
                 SpectralDimension (
@@ -431,17 +431,16 @@ with process_and_plot:
             ax = plt.subplot ( projection="csdm" )
             ax.plot ( sim.methods[ 0 ].simulation.real , color="black" , linewidth=1 )
             ax.invert_xaxis ()
-            plt.tight_layout ()
-            plt.show ()
+            st.pyplot ( ax.figure )
         elif one_or_two_dim == "2D":
             processed_dataset = None
-            min_line_broadening_hz_dim1 = st.number_input("Min Line Broadening in Hz:", value=0.0)
-            max_line_broadening_hz_dim1 = st.number_input("Max Line Broadening in Hz:", value=100.0)
-            min_line_broadening_hz_dim2 = st.number_input ( "Min Line Broadening in Hz:" , value=0.0 )
-            max_line_broadening_hz_dim2 = st.number_input ( "Max Line Broadening in Hz:" , value=100.0 )
+            min_line_broadening_hz_dim1 = st.number_input("Min Line Broadening in Hz:", value=0.0, key='lb11')
+            max_line_broadening_hz_dim1 = st.number_input("Max Line Broadening in Hz:", value=100.0, key='lb12')
+            min_line_broadening_hz_dim2 = st.number_input ( "Min Line Broadening in Hz:" , value=0.0, key='lb13' )
+            max_line_broadening_hz_dim2 = st.number_input ( "Max Line Broadening in Hz:" , value=100.0 , key='lb14' )
 
-            line_broadening_hz_dim1 = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz_dim1, max_value=max_line_broadening_hz_dim1 , value=10.0, format="%f", step=2.0 )
-            line_broadening_hz_dim2 = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz_dim2, max_value=max_line_broadening_hz_dim2 , value=10.0, format="%f", step=2.0 )
+            line_broadening_hz_dim1 = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz_dim1, max_value=max_line_broadening_hz_dim1 , value=10.0, format="%f", step=2.0 , key='lb15' )
+            line_broadening_hz_dim2 = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz_dim2, max_value=max_line_broadening_hz_dim2 , value=10.0, format="%f", step=2.0 , key='lb16' )
 
             processor = sp.SignalProcessor (
                 operations=[
@@ -456,8 +455,7 @@ with process_and_plot:
             processed_dataset /= processed_dataset.max ()
             plt.figure ( figsize=(4.25 , 3.0) )
             ax = plt.subplot ( projection="csdm" )
-            cb = ax.imshow ( processed_dataset.real , cmap="gist_ncar_r" , aspect="auto" )
+            cb = ax.contourf ( processed_dataset.real , cmap="viridis" , aspect="auto" )
             plt.colorbar ( cb )
-            plt.tight_layout ()
-            plt.show ()
+            st.pyplot(ax.figure )
 
