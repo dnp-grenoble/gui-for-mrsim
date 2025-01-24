@@ -25,6 +25,7 @@ def app():
     st.markdown('''
     - Add special methods like simulation of INADEQUATE spectra.
     - Add custom methods.
+    - Add interactive plots.
     
     For complex simulation and learn how it functions please read:  
     Srivastava, Deepansh J., and Philip J. Grandinetti. ‘Simulating Multipulse NMR Spectra of Polycrystalline Solids in the Frequency Domain’. The Journal of Chemical Physics 160, no. 23 (21 June 2024): 234110. https://doi.org/10.1063/5.0209887.
