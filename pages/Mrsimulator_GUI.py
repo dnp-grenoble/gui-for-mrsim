@@ -11,7 +11,10 @@ from mrsimulator import Simulator
 from mrsimulator import signal_processor as sp
 import time
 import matplotlib.pyplot as plt
-
+import mpld3
+import streamlit.components.v1 as components
+import plotly.graph_objects as go
+import csdmpy as cp
 
 
 # Nuclei listing and adding chemical shift/quadrupolar interaction etc.
@@ -426,12 +429,38 @@ with process_and_plot:
                     sp.FFT(),
                 ]
             )
-            # The plot of the simulation before signal processing.
-            plt.figure ( figsize=(4.25 , 3.0) )
-            ax = plt.subplot ( projection="csdm" )
-            ax.plot ( sim.methods[ 0 ].simulation.real , color="black" , linewidth=1 )
-            ax.invert_xaxis ()
-            st.pyplot ( ax.figure )
+            processed_dataset = processor.apply_operations(dataset=sim.methods[0].simulation)
+
+            fig = go.Figure()
+            hz_or_ppm = st.selectbox("Axis in Hz or ppm?", ["Hz", "ppm"], index=None, key="x_scale_choice")
+            if hz_or_ppm == "Hz":
+                x_oned = sim.methods[0].spectral_dimensions[0].coordinates_Hz()
+            else:
+                x_oned = sim.methods[0].spectral_dimensions[0].coordinates_ppm()
+            # Add trace for real part of the dataset
+            y_data = np.array(processed_dataset.real.dependent_variables[0].components[0])
+
+            fig.add_trace(go.Scatter(
+                x=x_oned[::-1],  # Inverting x-axis
+                y=y_data,
+                mode='lines',
+                line=dict(color='rgb(22, 128, 178)', width=2)
+            ))
+
+            # Update layout
+            fig.update_layout(
+                width=600,
+                height=400,
+                xaxis_title=f"Chemical Shift / {hz_or_ppm}",
+                yaxis_title="Arbitrary Units",
+                template="plotly_white"
+            )
+
+            fig.update_xaxes(autorange="reversed")
+
+            # Display in Streamlit
+            st.plotly_chart(fig)
+
         elif one_or_two_dim == "2D":
             processed_dataset = None
             min_line_broadening_hz_dim1 = st.number_input("Min Line Broadening in Hz:", value=0.0, key='lb11')
@@ -457,5 +486,7 @@ with process_and_plot:
             ax = plt.subplot ( projection="csdm" )
             cb = ax.contourf ( processed_dataset.real , cmap="viridis" , aspect="auto" )
             plt.colorbar ( cb )
-            st.pyplot(ax.figure )
+            # st.pyplot(ax.figure )
+            fig_html = mpld3.fig_to_html(ax.figure)
+            components.html(fig_html, height=600)
 
