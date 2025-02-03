@@ -10,11 +10,8 @@ from mrsimulator.method import SpectralDimension
 from mrsimulator import Simulator
 from mrsimulator import signal_processor as sp
 import time
-import matplotlib.pyplot as plt
-import mpld3
-import streamlit.components.v1 as components
 import plotly.graph_objects as go
-import csdmpy as cp
+
 
 
 # Nuclei listing and adding chemical shift/quadrupolar interaction etc.
@@ -441,7 +438,7 @@ with process_and_plot:
             y_data = np.array(processed_dataset.real.dependent_variables[0].components[0])
 
             fig.add_trace(go.Scatter(
-                x=x_oned[::-1],  # Inverting x-axis
+                x=x_oned,  # Inverting x-axis
                 y=y_data,
                 mode='lines',
                 line=dict(color='rgb(22, 128, 178)', width=2)
@@ -482,11 +479,37 @@ with process_and_plot:
             )
             processed_dataset = processor.apply_operations ( dataset=sim.methods[ 0 ].simulation )
             processed_dataset /= processed_dataset.max ()
-            plt.figure ( figsize=(4.25 , 3.0) )
-            ax = plt.subplot ( projection="csdm" )
-            cb = ax.contourf ( processed_dataset.real , cmap="viridis" , aspect="auto" )
-            plt.colorbar ( cb )
-            # st.pyplot(ax.figure )
-            fig_html = mpld3.fig_to_html(ax.figure)
-            components.html(fig_html, height=600)
+
+            fig = go.Figure()
+            hz_or_ppm_d1 = st.selectbox("Axis in Hz or ppm in F1 dim?", ["Hz", "ppm"], index=None, key="x_scale_choice")
+            hz_or_ppm_d2 = st.selectbox("Axis in Hz or ppm in F2 dim?", ["Hz", "ppm"], index=None, key="y_scale_choice")
+
+
+            if hz_or_ppm_d1 == "Hz":
+                x_scale = sim.methods[0].spectral_dimensions[0].coordinates_Hz()
+            else:
+                x_scale = sim.methods[0].spectral_dimensions[0].coordinates_ppm()
+
+            if hz_or_ppm_d2 == "Hz":
+                y_scale = sim.methods[0].spectral_dimensions[1].coordinates_Hz()
+            else:
+                y_scale = sim.methods[0].spectral_dimensions[1].coordinates_ppm()
+
+            z_data = np.array(processed_dataset.real.dependent_variables[0].components[0])
+
+            data = np.array(processed_dataset.real.dependent_variables[0].components[0])
+
+            fig = go.Figure(data=go.Contour(
+                x=x_scale,
+                y=y_scale,
+                z=data,
+                colorscale="viridis"
+            ))
+
+            fig.update_layout(
+                width=425,
+                height=300
+            )
+
+            st.plotly_chart(fig)
 
