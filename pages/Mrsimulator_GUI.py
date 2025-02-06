@@ -478,7 +478,7 @@ with process_and_plot:
                 ]
             )
             processed_dataset = processor.apply_operations ( dataset=sim.methods[ 0 ].simulation )
-            processed_dataset /= processed_dataset.max ()
+            processed_dataset /= processed_dataset.max () * 100.0
 
             fig = go.Figure()
             hz_or_ppm_d1 = st.selectbox("Axis in Hz or ppm in F1 dim?", ["Hz", "ppm"], index=None, key="x_scale_choice")
@@ -495,15 +495,20 @@ with process_and_plot:
             else:
                 y_scale = sim.methods[0].spectral_dimensions[1].coordinates_ppm()
 
-            z_data = np.array(processed_dataset.real.dependent_variables[0].components[0])
+            z_data = np.array(processed_dataset.real.dependent_variables)
 
-            data = np.array(processed_dataset.real.dependent_variables[0].components[0])
-
+            # data = np.array(processed_dataset.real.dependent_variables[0].components[0])
+            st.write(z_data)
             fig = go.Figure(data=go.Contour(
                 x=x_scale,
                 y=y_scale,
-                z=data,
-                colorscale="viridis"
+                z=z_data,
+                colorscale="viridis",
+                contours=dict(
+                    start=0.,
+                    end=100.0,
+                    size=50,
+                ),
             ))
 
             fig.update_layout(
