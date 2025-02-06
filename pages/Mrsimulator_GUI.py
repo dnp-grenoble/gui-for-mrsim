@@ -446,8 +446,7 @@ with process_and_plot:
 
             # Update layout
             fig.update_layout(
-                width=600,
-                height=400,
+                autosize=True,
                 xaxis_title=f"Chemical Shift / {hz_or_ppm}",
                 yaxis_title="Arbitrary Units",
                 template="plotly_white"
