@@ -459,13 +459,9 @@ with process_and_plot:
 
         elif one_or_two_dim == "2D":
             processed_dataset = None
-            min_line_broadening_hz_dim1 = st.number_input("Min Line Broadening in Hz:", value=0.0, key='lb11')
-            max_line_broadening_hz_dim1 = st.number_input("Max Line Broadening in Hz:", value=100.0, key='lb12')
-            min_line_broadening_hz_dim2 = st.number_input ( "Min Line Broadening in Hz:" , value=0.0, key='lb13' )
-            max_line_broadening_hz_dim2 = st.number_input ( "Max Line Broadening in Hz:" , value=100.0 , key='lb14' )
 
-            line_broadening_hz_dim1 = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz_dim1, max_value=max_line_broadening_hz_dim1 , value=10.0, format="%f", step=2.0 , key='lb15' )
-            line_broadening_hz_dim2 = st.slider( "Line Broadening in Hz:" , min_value=min_line_broadening_hz_dim2, max_value=max_line_broadening_hz_dim2 , value=10.0, format="%f", step=2.0 , key='lb16' )
+            line_broadening_hz_dim1 = st.number_input( "Line Broadening in Hz:" , value=10.0, format="%f", key='lb15' )
+            line_broadening_hz_dim2 = st.number_input( "Line Broadening in Hz:" , value=10.0, format="%f", key='lb16' )
 
             processor = sp.SignalProcessor (
                 operations=[
@@ -479,36 +475,16 @@ with process_and_plot:
             processed_dataset = processor.apply_operations ( dataset=sim.methods[ 0 ].simulation )
             processed_dataset /= processed_dataset.max ()
 
-            fig = go.Figure()
-            hz_or_ppm_d1 = st.selectbox("Axis in Hz or ppm in F1 dim?", ["Hz", "ppm"], index=None, key="x_scale_choice")
-            hz_or_ppm_d2 = st.selectbox("Axis in Hz or ppm in F2 dim?", ["Hz", "ppm"], index=None, key="y_scale_choice")
-
-
-            if hz_or_ppm_d1 == "Hz":
-                x_scale = sim.methods[0].spectral_dimensions[0].coordinates_Hz()
-            else:
-                x_scale = sim.methods[0].spectral_dimensions[0].coordinates_ppm()
-
-            if hz_or_ppm_d2 == "Hz":
-                y_scale = sim.methods[0].spectral_dimensions[1].coordinates_Hz()
-            else:
-                y_scale = sim.methods[0].spectral_dimensions[1].coordinates_ppm()
-
-            z_data = np.array(processed_dataset.real.dependent_variables[0].components[0])
-
-            data = np.array(processed_dataset.real.dependent_variables[0].components[0])
-
-            fig = go.Figure(data=go.Contour(
-                x=x_scale,
-                y=y_scale,
-                z=data,
-                colorscale="viridis"
-            ))
-
-            fig.update_layout(
-                width=425,
-                height=300
-            )
-
-            st.plotly_chart(fig)
+            import matplotlib.pyplot as plt
+            import mpld3
+            import streamlit.components.v1 as components
+            plt.figure(figsize=(4.25, 3.0))
+            ax = plt.subplot(projection="csdm")
+            cb = ax.imshow(processed_dataset.real, cmap="gist_ncar_r", aspect="auto")
+            plt.colorbar(cb)
+            ax.set_xlim(75, 25)
+            ax.set_ylim(-15, -65)
+            plt.tight_layout()
+            fig_html = mpld3.fig_to_html(ax.figure)
+            components.html(fig_html, height=600)
 
