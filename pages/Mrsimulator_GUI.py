@@ -294,11 +294,12 @@ def common_2d_experimental_parameters(type_of_method) :
     rotor_angle_degrees = st.number_input ( "Rotor Angle (degrees)" , min_value=0.0 , max_value=90.0 , value=54.735 )
     magnetic_flux_density_t = st.number_input ( "Magnetic Flux Density (T)" , min_value=0.0 , max_value=40.0 ,
                                                 value=9.4 )
-    spectral_dimension1_count = st.number_input ( "Spectral Dimension Count" , min_value=1 , value=1024 , key="td1")
+    st.markdown("#### Indirect Dimension")
+    spectral_dimension1_count = st.number_input ( "Isotropic Dimension Count" , min_value=1 , value=1024 , key="td1")
     spectral_width1_hz = st.number_input ( "Spectral Width (Hz)" , min_value=100.0 , value=25000.0 , key="sw1")
     reference_offset1_hz = st.number_input ( "Reference Offset (Hz)" , value=0.0, key="r1" )
-
-    spectral_dimension2_count = st.number_input ( "Spectral Dimension Count" , min_value=1 , value=1024, key="td2" )
+    st.markdown ( "#### Direct Dimension" )
+    spectral_dimension2_count = st.number_input ( "MAS Dimension Count" , min_value=1 , value=1024, key="td2" )
     spectral_width2_hz = st.number_input ( "Spectral Width (Hz)" , min_value=100.0 , value=25000.0, key="sw2" )
     reference_offset2_hz = st.number_input ( "Reference Offset (Hz)" , value=0.0, key="r2" )
 
@@ -474,17 +475,29 @@ with process_and_plot:
             )
             processed_dataset = processor.apply_operations ( dataset=sim.methods[ 0 ].simulation )
             processed_dataset /= processed_dataset.max ()
+            x_scale = processed_dataset.dimensions[0].coordinates
+            y_scale =  processed_dataset.dimensions[ 1 ].coordinates
+            data =  processed_dataset.dependent_variables[0].components[0]
+            z_data = data/np.max( data )
+            colorscale = [ [ 0 , 'lightblue' ] , [ 0.5 , 'mediumturquoise' ] , [ 1 , 'lightsalmon' ] ]
+            fig = go.Figure ( data=
+            go.Contour (
+                z=z_data.real ,
+                x=x_scale ,
+                y=y_scale ,
+                # contours_coloring='heatmap' ,
+                colorbar=dict ( title="Intensity" ) ,
+                colorscale=colorscale,
+                showscale=True,
+                line_smoothing=0.85,
+                connectgaps=True ,
+                ncontours=50 ,
+            )
+            )
 
-            import matplotlib.pyplot as plt
-            import mpld3
-            import streamlit.components.v1 as components
-            plt.figure(figsize=(4.25, 3.0))
-            ax = plt.subplot(projection="csdm")
-            cb = ax.imshow(processed_dataset.real, cmap="gist_ncar_r", aspect="auto")
-            plt.colorbar(cb)
-            ax.set_xlim(75, 25)
-            ax.set_ylim(-15, -65)
-            plt.tight_layout()
-            fig_html = mpld3.fig_to_html(ax.figure)
-            components.html(fig_html, height=600)
+            fig.update_layout (
+                yaxis=dict ( autorange="reversed", title = "Isotropic Dimension / ppm" ),
+                xaxis=dict ( autorange="reversed", title = "MAS Dimension / ppm" ),
+            )
 
+            st.plotly_chart ( fig )
