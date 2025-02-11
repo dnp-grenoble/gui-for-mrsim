@@ -479,21 +479,18 @@ with process_and_plot:
             y_scale =  processed_dataset.dimensions[ 1 ].coordinates
             data =  processed_dataset.dependent_variables[0].components[0]
             z_data = data/np.max( data )
-            colorscale = [ [ 0 , 'lightblue' ] , [ 0.5 , 'mediumturquoise' ] , [ 1 , 'lightsalmon' ] ]
             fig = go.Figure ( data=
             go.Contour (
-                z=z_data.real ,
+                z=z_data.real*100.0 ,
                 x=x_scale ,
                 y=y_scale ,
-                # contours_coloring='heatmap' ,
-                colorbar=dict ( title="Intensity" ) ,
-                colorscale=colorscale,
-                showscale=True,
-                line_smoothing=0.85,
-                connectgaps=True ,
-                ncontours=50 ,
+                colorscale="hot",
+                contours=dict(
+                    start = 10,
+                    end = 100,
+                    size = 10,
             )
-            )
+            ))
 
             fig.update_layout (
                 yaxis=dict ( autorange="reversed", title = "Isotropic Dimension / ppm" ),
