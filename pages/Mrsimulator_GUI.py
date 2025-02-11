@@ -369,13 +369,13 @@ def get_method_parameters_from_gui_input_fn():
     if kind_of_spectrum == "BlochDecaySpectrum" or kind_of_spectrum == "BlochDecayCTSpectrum":
         st.write("## Experimental Parameters")
         st.write("### 1D Spectrum")
-        method = common_1d_experimental_parameters(kind_of_spectrum)
+        method_fn = common_1d_experimental_parameters(kind_of_spectrum)
     else:
         st.write("## Experimental Parameters")
         st.write("### 2D Spectrum")
-        method = common_2d_experimental_parameters(kind_of_spectrum)
+        method_fn = common_2d_experimental_parameters(kind_of_spectrum)
 
-    return method
+    return method_fn
 
 def click_button():
     st.session_state.clicked = True
